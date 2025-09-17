@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word 文件生成器</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f4f9; }
+        .container { background-color: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
+        h1 { color: #333; margin-bottom: 20px; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        input[type="file"] { padding: 0; }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; transition: background-color 0.3s; }
+        button:hover { background-color: #0056b3; }
+        #status { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Word 文件生成器</h1>
+        <form id="wordForm">
+            <input type="text" id="textbox" placeholder="輸入文字 (例如：A002)" required>
+            <input type="file" id="photo" accept="image/*" capture="camera" required>
+            <button type="submit">加入到 Word</button>
+        </form>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('wordForm');
+        const statusDiv = document.getElementById('status');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const textboxValue = document.getElementById('textbox').value;
+            const photoFile = document.getElementById('photo').files[0];
+
+            if (!textboxValue || !photoFile) {
+                statusDiv.textContent = '請填寫所有欄位！';
+                statusDiv.style.color = 'red';
+                return;
+            }
+
+            statusDiv.textContent = '資料處理中...';
+            statusDiv.style.color = 'blue';
+
+            // 使用 FormData 來打包文字和圖片
+            const formData = new FormData();
+            formData.append('text', textboxValue);
+            formData.append('photo', photoFile);
+
+            try {
+                // 發送 POST 請求到後端
+                const response = await fetch('/add-to-word', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusDiv.textContent = '成功將資料加入到 Word！';
+                    statusDiv.style.color = 'green';
+                    form.reset(); // 清空表單
+                } else {
+                    statusDiv.textContent = `失敗: ${result.message}`;
+                    statusDiv.style.color = 'red';
+                }
+            } catch (error) {
+                statusDiv.textContent = '連線錯誤，請稍後再試。';
+                statusDiv.style.color = 'red';
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
