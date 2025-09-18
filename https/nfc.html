@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFC 讀取器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #status-message {
+            margin-top: 20px;
+            font-size: 1.1em;
+            color: #555;
+            min-height: 25px; /* 保持空間，避免頁面跳動 */
+        }
+        #result-display {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 90%;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Web NFC 讀取器</h1>
+    <p>請點擊按鈕，然後將手機靠近 NFC 標籤。</p>
+
+    <button id="nfc-button">開始讀取 NFC</button>
+
+    <p id="status-message"></p>
+
+    <div id="result-display">
+        <h3>讀取結果：</h3>
+        <pre id="nfc-data">沒有資料。</pre>
+    </div>
+
+    <script>
+        // 取得 HTML 元素
+        const nfcButton = document.getElementById('nfc-button');
+        const statusMessage = document.getElementById('status-message');
+        const nfcDataDisplay = document.getElementById('nfc-data');
+
+        // 檢查瀏覽器是否支援 Web NFC API
+        if ('nfc' in navigator) {
+            statusMessage.textContent = '此瀏覽器支援 Web NFC。';
+            nfcButton.addEventListener('click', startNFCScan);
+        } else {
+            statusMessage.textContent = '警告：此瀏覽器不支援 Web NFC。請使用 Android 上的 Chrome 瀏覽器。';
+            nfcButton.disabled = true;
+        }
+
+        async function startNFCScan() {
+            try {
+                // 檢查是否已取得權限
+                const permission = await navigator.permissions.query({ name: 'nfc' });
+                if (permission.state === 'denied') {
+                    statusMessage.textContent = '您已拒絕 NFC 權限。請在瀏覽器設定中啟用。';
+                    return;
+                }
+
+                statusMessage.textContent = '正在等待標籤...請將手機背面靠近 NFC 標籤。';
+                nfcDataDisplay.textContent = '沒有資料。';
+
+                // 創建一個 NDEFReader 實例
+                const reader = new NDEFReader();
+
+                // 開始掃描
+                await reader.scan();
+
+                // 監聽讀取到的訊息
+                reader.onreading = event => {
+                    const { message, serialNumber } = event;
+                    let resultText = `--- 讀取成功 ---\n標籤序號: ${serialNumber}\n\n`;
+
+                    // 處理每個紀錄（record）
+                    for (const record of message.records) {
+                        const decoder = new TextDecoder();
+                        const recordType = record.recordType;
+
+                        resultText += `紀錄類型: ${recordType}\n`;
+
+                        // 根據不同的 recordType 處理資料
+                        switch (recordType) {
+                            case 'text':
+                                resultText += `資料: ${decoder.decode(record.data)}\n`;
+                                break;
+                            case 'url':
+                                resultText += `網址: ${decoder.decode(record.data)}\n`;
+                                break;
+                            default:
+                                resultText += `原始資料: ${decoder.decode(record.data)}\n`;
+                                break;
+                        }
+                    }
+
+                    nfcDataDisplay.textContent = resultText;
+                    statusMessage.textContent = '讀取完成！';
+                };
+
+                // 處理錯誤
+                reader.onreadingerror = event => {
+                    statusMessage.textContent = '讀取失敗，請重試。';
+                    console.error('NFC 讀取錯誤:', event);
+                };
+
+            } catch (error) {
+                // 捕獲任何未處理的錯誤，如權限問題
+                statusMessage.textContent = `NFC 錯誤: ${error.message}`;
+                console.error('NFC 操作發生錯誤:', error);
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -154,17 +154,17 @@
 		}
 
 		// 切換到修改模式
-		function toggleEdit(id) {
-			const row = document.querySelector(`tr[data-id="${id}"]`);
+		async function  toggleEdit(id) {
+			let row = document.querySelector(`tr[data-id="${id}"]`);
 			if (row.classList.contains('edit-row')) {
 				// 如果已經在修改模式，則取消
-				cancelEdit(id);
+				await cancelEdit(id);
 			} else {
 				// 進入修改模式
 				if (editModeId !== null) {
-					cancelEdit(editModeId); // 取消其他正在修改的列
+				await	cancelEdit(editModeId); // 取消其他正在修改的列
 				}
-
+				row = document.querySelector(`tr[data-id="${id}"]`);
 				row.classList.add('edit-row');
 				editModeId = id;
 
@@ -199,7 +199,7 @@
 				if (!response.ok) throw new Error('儲存失敗');
 				alert('儲存成功！');
 				editModeId = null;
-				fetchRecords(); // 重新載入資料
+				await fetchRecords(); // 重新載入資料
 			} catch (error) {
 				console.error('Error saving record:', error);
 				alert('儲存失敗，請檢查主控台。');
@@ -207,9 +207,9 @@
 		}
 
 		// 取消修改
-		function cancelEdit(id) {
+		async function cancelEdit(id) {
 			editModeId = null;
-			fetchRecords(); // 重新載入資料
+			await fetchRecords(); // 重新載入資料
 		}
 
 		document.addEventListener('DOMContentLoaded', fetchRecords);
