@@ -1,93 +1,219 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>資料管理</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; }
-        .container { max-width: 800px; margin: auto; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #333; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #007bff; color: white; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
-        img { max-width: 100px; height: auto; display: block; margin: auto; }
-        button.delete-btn { background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
-        button.delete-btn:hover { background-color: #c82333; }
-    </style>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>資料管理</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			background-color: #f4f4f9;
+			padding: 20px;
+		}
+
+		.container {
+			max-width: 800px;
+			margin: auto;
+			background-color: white;
+			padding: 20px;
+			border-radius: 8px;
+			box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+		}
+
+		h1 {
+			text-align: center;
+			color: #333;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 20px;
+		}
+
+		th,
+		td {
+			border: 1px solid #ddd;
+			padding: 12px;
+			text-align: left;
+		}
+
+		th {
+			background-color: #007bff;
+			color: white;
+		}
+
+		tr:nth-child(even) {
+			background-color: #f9f9f9;
+		}
+
+		img {
+			max-width: 200px;
+			height: auto;
+			display: block;
+			margin: auto;
+		}
+
+		button {
+			background-color: #007bff;
+			color: white;
+			border: none;
+			padding: 8px 12px;
+			border-radius: 5px;
+			cursor: pointer;
+			margin-right: 5px;
+		}
+
+		button:hover {
+			background-color: #0056b3;
+		}
+
+		.delete-btn {
+			background-color: #dc3545;
+		}
+
+		.delete-btn:hover {
+			background-color: #c82333;
+		}
+
+		.edit-row input,
+		.edit-row select {
+			width: 100%;
+			box-sizing: border-box;
+		}
+	</style>
 </head>
+
 <body>
-    <div class="container">
-        <h1>資料管理</h1>
-        <p><a href="index.html">返回 Word 插入頁面</a></p>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>文字</th>
-                    <th>圖片</th>
-                    <th>狀態</th>
-                    <th>建立時間</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody id="records-table-body">
-                </tbody>
-        </table>
-    </div>
+	<div class="container">
+		<h1>資料管理</h1>
+		<p><a href="index.html">返回 Word 插入頁面</a></p>
+		<table>
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th>文字</th>
+					<th>圖片</th>
+					<th>備註</th>
+					<th>建立時間</th>
+					<th>操作</th>
+				</tr>
+			</thead>
+			<tbody id="records-table-body">
+			</tbody>
+		</table>
+	</div>
 
-    <script>
-        const tableBody = document.getElementById('records-table-body');
+	<script>
+		const tableBody = document.getElementById('records-table-body');
+		let editModeId = null;
 
-        // 讀取並顯示所有資料
-        async function fetchRecords() {
-            try {
-                const response = await fetch('/api/records');
-                if (!response.ok) throw new Error('無法讀取資料');
-                const records = await response.json();
+		// 讀取並顯示所有資料
+		async function fetchRecords() {
+			try {
+				const response = await fetch('/api/records');
+				if (!response.ok) throw new Error('無法讀取資料');
+				const records = await response.json();
 
-                tableBody.innerHTML = ''; // 清空表格
-                records.forEach(record => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
+				tableBody.innerHTML = '';
+				records.forEach(record => {
+					const row = document.createElement('tr');
+					row.dataset.id = record.id;
+					row.innerHTML = `
                         <td>${record.id}</td>
                         <td>${record.text}</td>
-                        <td><img src="${record.image_path}" alt="圖片"></td>
-                        <td>${record.status}</td>
+                        <td><img src="${record.thumbnail_path}" alt="圖片"></td>
+                        <td>${record.remark}</td>
                         <td>${new Date(record.created_at).toLocaleString()}</td>
                         <td>
+                            <button onclick="toggleEdit(${record.id})">修改</button>
                             <button class="delete-btn" onclick="deleteRecord(${record.id})">刪除</button>
                         </td>
                     `;
-                    tableBody.appendChild(row);
-                });
-            } catch (error) {
-                console.error('Error fetching records:', error);
-                tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">載入資料失敗。</td></tr>`;
-            }
-        }
+					tableBody.appendChild(row);
+				});
+			} catch (error) {
+				console.error('Error fetching records:', error);
+				tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">載入資料失敗。</td></tr>`;
+			}
+		}
 
-        // 刪除資料
-        async function deleteRecord(id) {
-            if (!confirm('確定要刪除這筆資料嗎？')) {
-                return;
-            }
-            try {
-                const response = await fetch(`/api/records/${id}`, {
-                    method: 'DELETE'
-                });
-                if (!response.ok) throw new Error('刪除失敗');
-                alert('刪除成功！');
-                fetchRecords(); // 重新載入資料
-            } catch (error) {
-                console.error('Error deleting record:', error);
-                alert('刪除失敗，請檢查主控台。');
-            }
-        }
+		// 刪除資料
+		async function deleteRecord(id) {
+			if (!confirm('確定要刪除這筆資料嗎？')) return;
+			try {
+				const response = await fetch(`/api/records/${id}`, { method: 'DELETE' });
+				if (!response.ok) throw new Error('刪除失敗');
+				alert('刪除成功！');
+				fetchRecords(); // 重新載入資料
+			} catch (error) {
+				console.error('Error deleting record:', error);
+				alert('刪除失敗，請檢查主控台。');
+			}
+		}
 
-        // 頁面載入時執行
-        document.addEventListener('DOMContentLoaded', fetchRecords);
-    </script>
+		// 切換到修改模式
+		function toggleEdit(id) {
+			const row = document.querySelector(`tr[data-id="${id}"]`);
+			if (row.classList.contains('edit-row')) {
+				// 如果已經在修改模式，則取消
+				cancelEdit(id);
+			} else {
+				// 進入修改模式
+				if (editModeId !== null) {
+					cancelEdit(editModeId); // 取消其他正在修改的列
+				}
+
+				row.classList.add('edit-row');
+				editModeId = id;
+
+				const textCell = row.children[1];
+				const remarkCell = row.children[3];
+				const actionCell = row.children[5];
+
+				const originalText = textCell.textContent;
+				const originalRemark = remarkCell.textContent;
+
+				textCell.innerHTML = `<input type="text" value="${originalText}">`;
+				remarkCell.innerHTML = `<textarea id="remarkText" rows="15">${originalRemark}</textarea>`;
+				actionCell.innerHTML = `
+                    <button onclick="saveEdit(${id})">儲存</button>
+                    <button class="delete-btn" onclick="cancelEdit(${id})">取消</button>
+                `;
+			}
+		}
+
+		// 儲存修改
+		async function saveEdit(id) {
+			const row = document.querySelector(`tr[data-id="${id}"]`);
+			const newText = row.querySelector('input[type="text"]').value;
+			const newRemark = row.querySelector('#remarkText').value;
+
+			try {
+				const response = await fetch(`/api/records/${id}`, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ text: newText, remark: newRemark })
+				});
+				if (!response.ok) throw new Error('儲存失敗');
+				alert('儲存成功！');
+				editModeId = null;
+				fetchRecords(); // 重新載入資料
+			} catch (error) {
+				console.error('Error saving record:', error);
+				alert('儲存失敗，請檢查主控台。');
+			}
+		}
+
+		// 取消修改
+		function cancelEdit(id) {
+			editModeId = null;
+			fetchRecords(); // 重新載入資料
+		}
+
+		document.addEventListener('DOMContentLoaded', fetchRecords);
+	</script>
 </body>
+
 </html>
