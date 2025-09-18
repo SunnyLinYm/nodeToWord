@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>資料管理</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        img { max-width: 100px; height: auto; display: block; margin: auto; }
+        button.delete-btn { background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
+        button.delete-btn:hover { background-color: #c82333; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>資料管理</h1>
+        <p><a href="index.html">返回 Word 插入頁面</a></p>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>文字</th>
+                    <th>圖片</th>
+                    <th>狀態</th>
+                    <th>建立時間</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="records-table-body">
+                </tbody>
+        </table>
+    </div>
+
+    <script>
+        const tableBody = document.getElementById('records-table-body');
+
+        // 讀取並顯示所有資料
+        async function fetchRecords() {
+            try {
+                const response = await fetch('/api/records');
+                if (!response.ok) throw new Error('無法讀取資料');
+                const records = await response.json();
+
+                tableBody.innerHTML = ''; // 清空表格
+                records.forEach(record => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${record.id}</td>
+                        <td>${record.text}</td>
+                        <td><img src="${record.image_path}" alt="圖片"></td>
+                        <td>${record.status}</td>
+                        <td>${new Date(record.created_at).toLocaleString()}</td>
+                        <td>
+                            <button class="delete-btn" onclick="deleteRecord(${record.id})">刪除</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching records:', error);
+                tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">載入資料失敗。</td></tr>`;
+            }
+        }
+
+        // 刪除資料
+        async function deleteRecord(id) {
+            if (!confirm('確定要刪除這筆資料嗎？')) {
+                return;
+            }
+            try {
+                const response = await fetch(`/api/records/${id}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error('刪除失敗');
+                alert('刪除成功！');
+                fetchRecords(); // 重新載入資料
+            } catch (error) {
+                console.error('Error deleting record:', error);
+                alert('刪除失敗，請檢查主控台。');
+            }
+        }
+
+        // 頁面載入時執行
+        document.addEventListener('DOMContentLoaded', fetchRecords);
+    </script>
+</body>
+</html>

@@ -18,6 +18,7 @@
 <body>
     <div class="container">
         <h1>Word 文件生成器</h1>
+        <p><a href="crud.html"> 儲存資料 頁面</a></p>
         <form id="wordForm">
             <input type="text" id="textbox" placeholder="輸入文字 (例如：A002)" required>
             <input type="file" id="photo" accept="image/*" capture="camera" required>
@@ -52,7 +53,7 @@
 
             try {
                 // 發送 POST 請求到後端
-                const response = await fetch('/add-to-word', {
+                const response = await fetch('/add-record', {
                     method: 'POST',
                     body: formData
                 });
